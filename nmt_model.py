@@ -174,8 +174,8 @@ class NMT(nn.Module):
         enc_hiddens_sec = nn.utils.rnn.pad_packed_sequence(enc_hids)[0]
         enc_hiddens = enc_hiddens_sec.permute(1,0,2)
         
-        init_decoder_hidden = self.h_projection(torch.cat((last_hidden[1],last_hidden[0]),1)) 
-        init_decoder_cell = self.c_projection(torch.cat((last_cell[1],last_cell[0]),1))
+        init_decoder_hidden = self.h_projection(torch.cat((last_hidden[0],last_hidden[1]),dim =1)) 
+        init_decoder_cell = self.c_projection(torch.cat((last_cell[0],last_cell[1]),dim = 1))
         dec_init_state = (init_decoder_hidden, init_decoder_cell)
         ### END YOUR CODE
 
@@ -315,7 +315,8 @@ class NMT(nn.Module):
         ###     Tensor Squeeze:
         ###         https://pytorch.org/docs/stable/torch.html#torch.squeeze
         dec_state = self.decoder(Ybar_t, dec_state) #Ybar_t = (b,e+h), dec_state = tuple of (b,h)
-        dec_unsqueezed = torch.unsqueeze(dec_state[0], 2)
+        dec_hidden, dec_cell = dec_state
+        dec_unsqueezed = torch.unsqueeze(dec_hidden, 2)
         e_t = torch.squeeze(torch.bmm(enc_hiddens_proj, dec_unsqueezed),2)
         ### END YOUR CODE
 
@@ -354,7 +355,7 @@ class NMT(nn.Module):
         alpha_t_unsqueezed = torch.unsqueeze(alpha_t,1)
         a_t = torch.squeeze(torch.bmm(alpha_t_unsqueezed, enc_hiddens),1)
 
-        U_t = torch.cat((a_t,dec_state[0]),1)
+        U_t = torch.cat((a_t, dec_hidden),1)
         V_t = self.combined_output_projection(U_t)
         O_t = self.dropout(torch.tanh(V_t))
         ### END YOUR CODE
